@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -12,6 +12,7 @@ const transporter = nodemailer.createTransport({
 
 const fromAddress = process.env.FROM_EMAIL || process.env.SMTP_USER;
 const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+const apiBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:5000';
 
 async function sendMail({ to, subject, html }) {
   if (!to) {
@@ -26,8 +27,9 @@ async function sendMail({ to, subject, html }) {
   });
 }
 
+// Verification Email to be sent for a new user upon registration
 async function sendVerificationEmail(email, token) {
-  const verificationLink = `${baseUrl}/verify-email?token=${encodeURIComponent(token)}`;
+  const verificationLink = `${apiBaseUrl}/api/auth/verify-email?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(token)}`;
 
   return sendMail({
     to: email,
@@ -36,7 +38,7 @@ async function sendVerificationEmail(email, token) {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
         <h2>Welcome</h2>
         <p>Thanks for creating an account. Please verify your email address by clicking the button below.</p>
-        <p><a href="${verificationLink}" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">Verify Email</a></p>
+        <p><a href="${verificationLink}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;">Verify Account</a></p>
         <p>If the button does not work, copy and paste this link into your browser:</p>
         <p>${verificationLink}</p>
       </div>
@@ -44,8 +46,8 @@ async function sendVerificationEmail(email, token) {
   });
 }
 
-async function sendPasswordResetEmail(email, token) {
-  const resetLink = `${baseUrl}/reset-password?token=${encodeURIComponent(token)}`;
+async function sendResetPasswordEmail(email, token) {
+  const resetLink = `${baseUrl}/reset-password?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`;
 
   return sendMail({
     to: email,
@@ -60,6 +62,10 @@ async function sendPasswordResetEmail(email, token) {
       </div>
     `,
   });
+}
+
+async function sendPasswordResetEmail(email, token) {
+  return sendResetPasswordEmail(email, token);
 }
 
 async function sendAdminRegistrationEmail(email, token) {
@@ -80,8 +86,16 @@ async function sendAdminRegistrationEmail(email, token) {
   });
 }
 
-module.exports = {
+export {
   sendVerificationEmail,
+  sendResetPasswordEmail,
+  sendPasswordResetEmail,
+  sendAdminRegistrationEmail,
+};
+
+export default {
+  sendVerificationEmail,
+  sendResetPasswordEmail,
   sendPasswordResetEmail,
   sendAdminRegistrationEmail,
 };

@@ -24,7 +24,6 @@ logs/
 /.cache
 
 # Uploads and local storage
-uploads/
 coverage/
 
 # OS files
@@ -36,3 +35,6 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Others
+models/

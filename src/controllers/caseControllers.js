@@ -5,7 +5,7 @@ import {
   getAllCases,
   updateCase,
   deleteCase,
-} from '../models/caseModels.js';
+} from '../../database/models/caseModels.js';
 
 export async function createCaseController(req, res) {
   try {

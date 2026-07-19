@@ -5,7 +5,7 @@ import {
   getAllChainOfCustodyEntries,
   updateChainOfCustodyEntry,
   deleteChainOfCustodyEntry,
-} from '../models/chainModels.js';
+} from '../../database/models/chainModels.js';
 
 export async function createChainEntryController(req, res) {
   try {

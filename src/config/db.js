@@ -1,36 +1,24 @@
 import 'dotenv/config';
-import { Pool } from 'pg';
+import mongoose from 'mongoose';
 
-// Configure the pool using env vars
-const pool = new Pool({
-  host: process.env.PGHOST,
-  user: process.env.PGUSER,
-  password: process.env.PGPASSWORD,
-  database: process.env.PGDATABASE,
-  port: process.env.PGPORT ? Number(process.env.PGPORT) : 5432,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+const MONGODB_URI = process.env.MONGODB_URI || process.env.DATABASE_URL;
 
-pool.on('error', (err) => {
-  // Log unexpected errors on idle clients
-  // eslint-disable-next-line no-console
-  console.error('Unexpected Postgres client error', err);
-});
+export async function connectDB() {
+  if (!MONGODB_URI) {
+    throw new Error('MONGODB_URI is required');
+  }
 
-export async function query(text, params) {
-  return pool.query(text, params);
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  await mongoose.connect(MONGODB_URI);
+  return mongoose.connection;
 }
 
 export async function testConnection() {
-  const client = await pool.connect();
-  try {
-    await client.query('SELECT 1');
-    return true;
-  } finally {
-    client.release();
-  }
+  await connectDB();
+  return mongoose.connection.readyState === 1;
 }
 
-export default pool;
+export default connectDB;
