@@ -3,21 +3,30 @@ import express from 'express';
 import cors from 'cors';
 import connectDB from './config/db.js';
 
-// Route group
-import authRoutes from './routes/authRoutes.js';
+import authRoutes from './modules/auth/auth.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
+import caseRoutes from './modules/cases/case.routes.js';
+import chainRoutes from './modules/chain-of-custody/chain.routes.js';
+import evidenceRoutes from './modules/evidence/evidence.routes.js';
+import reportRoutes from './modules/evidence/report.routes.js';
+import { errorHandler, notFound } from './middleware/errorMiddleware.js';
 
 const PORT = process.env.PORT || 5000;
 const app = express();
 
-// Middlewares
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 
-// Main app routes
-// Auth Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/cases', caseRoutes);
+app.use('/api/chain-of-custody', chainRoutes);
+app.use('/api/evidence', evidenceRoutes);
+app.use('/api/reports', reportRoutes);
 
-// DB check-up and server start-up
+app.use(notFound);
+app.use(errorHandler);
+
 connectDB()
   .then(() => {
     console.log('MongoDB connected successfully');

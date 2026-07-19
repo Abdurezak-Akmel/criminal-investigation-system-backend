@@ -6,14 +6,13 @@ export function requireAdmin(req, res, next) {
 			return res.status(401).json({ success: false, message: 'Authentication required' });
 		}
 
-		const adminRole = (process.env.ADMIN_ROLE || 'referee').toLowerCase();
 		const userRole = typeof user.role === 'string' ? user.role.toLowerCase() : null;
 
 		if (!userRole) {
 			return res.status(403).json({ success: false, message: 'Admin access required' });
 		}
 
-		if (userRole !== adminRole) {
+		if (!['admin', 'referee'].includes(userRole)) {
 			return res.status(403).json({ success: false, message: 'Admin access required' });
 		}
 
