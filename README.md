@@ -254,7 +254,3 @@ Possible enhancements for the project include:
 - file upload storage integration with cloud storage
 - automated tests
 - API documentation with Swagger or OpenAPI
-
-## License
-
-This project is currently licensed under ISC.
