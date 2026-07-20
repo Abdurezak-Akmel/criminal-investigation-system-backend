@@ -2,6 +2,8 @@
 export function requireAdmin(req, res, next) {
 	try {
 		const user = req.user;
+
+		// If there is no user credentials in the request: 
 		if (!user) {
 			return res.status(401).json({ success: false, message: 'Authentication required' });
 		}
@@ -24,4 +26,4 @@ export function requireAdmin(req, res, next) {
 	}
 }
 
-export default { requireAdmin };
+export default requireAdmin;

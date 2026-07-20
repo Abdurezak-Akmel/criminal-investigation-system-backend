@@ -1,19 +1,20 @@
 import mongoose from 'mongoose';
 
-const otpSchema = new mongoose.Schema(
-  {
-    code: String,
-    expiresAt: Date,
-    purpose: {
-      type: String,
-      enum: ['email_verification', 'password_reset', 'admin_invite'],
-    },
-  },
-  { _id: false }
-);
-
+// Definition of the User schema
 const userSchema = new mongoose.Schema(
   {
+    // userInfo: { 
+      // email, 
+      // passwordHash, 
+      // role, 
+      // fullName, 
+      // badgeNumber, 
+      // agencyDepartment, 
+      // contactPhone, 
+      // isActive, 
+      // isVerified 
+    // }
+    
     email: {
       type: String,
       required: true,
@@ -39,18 +40,20 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
+      required: true,
     },
     agencyDepartment: String,
     contactPhone: String,
     isActive: {
       type: Boolean,
       default: true,
+      required: true,
     },
     isVerified: {
       type: Boolean,
       default: false,
+      required: true,
     },
-    otp: otpSchema,
   },
   { timestamps: true }
 );

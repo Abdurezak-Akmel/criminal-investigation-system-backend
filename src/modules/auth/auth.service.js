@@ -8,6 +8,9 @@ import {
   sendAdminRegistrationEmail,
 } from '../../utils/email.js';
 
+const verificationCodes = new Map();
+const passwordResetTokens = new Map();
+
 function publicUser(user) {
   return {
     id: user.id,
@@ -29,6 +32,78 @@ function generateTokenValue() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+function normalizeRole(role) {
+  if (role === 'user') {
+    return 'submitter';
+  }
+
+  return ['submitter', 'referee', 'admin'].includes(role) ? role : 'submitter';
+}
+
+function normalizeEmail(email) {
+  return email?.toLowerCase().trim();
+}
+
+async function generateUniqueBadgeNumber() {
+  while (true) {
+    const badgeNumber = `BADGE-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const existingUser = await User.findOne({ badgeNumber });
+    if (!existingUser) {
+      return badgeNumber;
+    }
+  }
+}
+
+function storeVerificationCode(email, code) {
+  verificationCodes.set(email, {
+    code,
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+  });
+}
+
+function getVerificationCode(email) {
+  const record = verificationCodes.get(email);
+  if (!record) {
+    return null;
+  }
+
+  if (record.expiresAt < new Date()) {
+    verificationCodes.delete(email);
+    return null;
+  }
+
+  return record;
+}
+
+function clearVerificationCode(email) {
+  verificationCodes.delete(email);
+}
+
+function storeResetToken(email, token) {
+  passwordResetTokens.set(email, {
+    token,
+    expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+  });
+}
+
+function getResetToken(email) {
+  const record = passwordResetTokens.get(email);
+  if (!record) {
+    return null;
+  }
+
+  if (record.expiresAt < new Date()) {
+    passwordResetTokens.delete(email);
+    return null;
+  }
+
+  return record;
+}
+
+function clearResetToken(email) {
+  passwordResetTokens.delete(email);
+}
+
 export async function registerUser(payload, { verifyImmediately = false } = {}) {
   const {
     email,
@@ -40,7 +115,14 @@ export async function registerUser(payload, { verifyImmediately = false } = {}) 
     contactPhone,
   } = payload;
 
-  const existingUser = await User.findOne({ email });
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !password || !fullName) {
+    const error = new Error('Email, password, and full name are required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const existingUser = await User.findOne({ email: normalizedEmail });
   if (existingUser) {
     const error = new Error('Email already registered');
     error.statusCode = 409;
@@ -49,58 +131,57 @@ export async function registerUser(payload, { verifyImmediately = false } = {}) 
 
   const passwordHash = await bcrypt.hash(password, 10);
   const otp = verifyImmediately ? undefined : generateOtp();
+  const resolvedBadgeNumber = badgeNumber || (await generateUniqueBadgeNumber());
   const user = await User.create({
-    email,
+    email: normalizedEmail,
     passwordHash,
     fullName,
-    role,
-    badgeNumber,
-    agencyDepartment,
-    contactPhone,
+    role: normalizeRole(role),
+    badgeNumber: resolvedBadgeNumber,
+    agencyDepartment: agencyDepartment || '',
+    contactPhone: contactPhone || payload.contact || '',
     isVerified: verifyImmediately,
-    otp: otp
-      ? {
-          code: otp,
-          purpose: 'email_verification',
-          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        }
-      : undefined,
   });
 
   if (otp) {
-    await sendVerificationEmail(email, otp);
+    storeVerificationCode(normalizedEmail, otp);
+    await sendVerificationEmail(normalizedEmail, otp);
   }
 
   return publicUser(user);
 }
 
 export async function verifyEmail({ email, otp }) {
-  const user = await User.findOne({ email });
+  const normalizedEmail = normalizeEmail(email);
+  const verificationRecord = getVerificationCode(normalizedEmail);
+  const user = await User.findOne({ email: normalizedEmail });
+
   if (!user) {
     const error = new Error('User not found');
     error.statusCode = 404;
     throw error;
   }
 
-  if (!user.otp?.code) {
+  if (!verificationRecord) {
     const error = new Error('No verification code found');
     error.statusCode = 400;
     throw error;
   }
 
-  if (user.otp.code !== otp || user.otp.expiresAt < new Date()) {
+  if (verificationRecord.code !== otp) {
     const error = new Error('Invalid or expired verification code');
     error.statusCode = 400;
     throw error;
   }
 
   user.isVerified = true;
-  user.otp = undefined;
   await user.save();
+  clearVerificationCode(normalizedEmail);
 }
 
 export async function loginUser({ email, password }) {
-  const user = await User.findOne({ email });
+  const normalizedEmail = normalizeEmail(email);
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     const error = new Error('Invalid credentials');
     error.statusCode = 401;
@@ -125,7 +206,8 @@ export async function loginUser({ email, password }) {
 }
 
 export async function requestPasswordReset(email) {
-  const user = await User.findOne({ email });
+  const normalizedEmail = normalizeEmail(email);
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     const error = new Error('User not found');
     error.statusCode = 404;
@@ -133,32 +215,29 @@ export async function requestPasswordReset(email) {
   }
 
   const resetToken = generateTokenValue();
-  user.otp = {
-    code: resetToken,
-    purpose: 'password_reset',
-    expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-  };
-  await user.save();
-  await sendPasswordResetEmail(email, resetToken);
+  storeResetToken(normalizedEmail, resetToken);
+  await sendPasswordResetEmail(normalizedEmail, resetToken);
 }
 
 export async function resetPassword({ email, token, newPassword }) {
-  const user = await User.findOne({ email });
+  const normalizedEmail = normalizeEmail(email);
+  const user = await User.findOne({ email: normalizedEmail });
   if (!user) {
     const error = new Error('User not found');
     error.statusCode = 404;
     throw error;
   }
 
-  if (!user.otp?.code || user.otp.code !== token || user.otp.expiresAt < new Date()) {
+  const resetRecord = getResetToken(normalizedEmail);
+  if (!resetRecord || resetRecord.token !== token) {
     const error = new Error('Invalid or expired reset request');
     error.statusCode = 400;
     throw error;
   }
 
   user.passwordHash = await bcrypt.hash(newPassword, 10);
-  user.otp = undefined;
   await user.save();
+  clearResetToken(normalizedEmail);
 }
 
 export async function inviteAdmin(email) {

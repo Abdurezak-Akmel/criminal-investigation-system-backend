@@ -9,7 +9,11 @@ import {
 } from './auth.service.js';
 
 export const registerUser = asyncHandler(async (req, res) => {
-  const user = await registerUserService(req.body);
+  const user = await registerUserService({
+    ...req.body,
+    contactPhone: req.body.contactPhone || req.body.contact,
+    agencyDepartment: req.body.agencyDepartment || req.body.department,
+  });
   return res.status(201).json({
     success: true,
     message: 'Account created. Verification email sent.',
@@ -20,7 +24,12 @@ export const registerUser = asyncHandler(async (req, res) => {
 
 export const registerAdmin = asyncHandler(async (req, res) => {
   const user = await registerUserService(
-    { ...req.body, role: 'admin' },
+    {
+      ...req.body,
+      role: 'admin',
+      contactPhone: req.body.contactPhone || req.body.contact,
+      agencyDepartment: req.body.agencyDepartment || req.body.department,
+    },
     { verifyImmediately: true }
   );
 

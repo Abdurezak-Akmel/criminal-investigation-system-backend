@@ -13,6 +13,7 @@ import { requireAdmin } from '../../middleware/adminMiddleware.js';
 const router = express.Router();
 
 router.use(verifyToken);
+
 router.post('/', createCaseController);
 router.get('/', getAllCasesController);
 router.get('/number/:caseNumber', getCaseByCaseNumberController);

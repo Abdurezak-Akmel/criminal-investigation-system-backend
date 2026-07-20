@@ -2,6 +2,19 @@ import mongoose from 'mongoose';
 
 const caseSchema = new mongoose.Schema(
   {
+    /*
+    case: {
+      caseNumber,
+      title,
+      description,
+      statuteOffence,
+      incidentDate,
+      status,
+      sensitivity,
+      submitterdBy,
+      assignedInvestigator
+    }
+    */
     caseNumber: {
       type: String,
       unique: true,

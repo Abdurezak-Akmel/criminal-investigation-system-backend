@@ -12,7 +12,7 @@ const transporter = nodemailer.createTransport({
 
 const fromAddress = process.env.FROM_EMAIL || process.env.SMTP_USER;
 const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-const apiBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:5000';
+const apiBaseUrl = process.env.API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:3000';
 
 async function sendMail({ to, subject, html }) {
   if (!to) {
