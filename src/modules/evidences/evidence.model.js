@@ -2,6 +2,26 @@ import mongoose from 'mongoose';
 
 const evidenceSchema = new mongoose.Schema(
   {
+    /*
+    evidence: {
+      caseId,
+      uploadedBy,
+      evidenceTagNumber,
+      description,
+      originalFilename,
+      fileType,
+      fileSize,
+      filePath,
+      fileKeyEncrypted,
+      iv,
+      fileSha256,
+      status,
+      reviewedBy,
+      reviewNotes,
+      reviewedAt,
+      retentionExpirationDate
+    }
+    */
     caseId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Case',

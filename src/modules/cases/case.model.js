@@ -7,11 +7,11 @@ const caseSchema = new mongoose.Schema(
       caseNumber,
       title,
       description,
-      statuteOffence,
+      statuteOffence, The rule bypassed/disobeyed
       incidentDate,
       status,
       sensitivity,
-      submitterdBy,
+      submittedBy,
       assignedInvestigator
     }
     */
